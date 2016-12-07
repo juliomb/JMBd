@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import CoreData
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -15,7 +16,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        
+        //removeAllMovies()
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(updateFavoritesBadgeNotification(notification:)), name: Notification.Name("updateFavoritesBadgeNotification"), object: nil)
+        
+        let dataProvider = LocalCoreDataService()
+        dataProvider.updateFavoritesBadge()
+        
         return true
     }
 
@@ -40,7 +48,34 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
+    
+    func removeAllMovies(){
+        let context = CoreDataStack.sharedInstance.persistentContainer.viewContext
+        let request : NSFetchRequest<MovieManaged> = MovieManaged.fetchRequest()
+        
+        do {
+            let fetchedMovies = try context.fetch(request)
+            for movie in fetchedMovies {
+                context.delete(movie)
+            }
+        } catch {
+            print("Error eliminando todas las películas de Core Data")
+        }
+        
+    }
 
+    
+    func updateFavoritesBadgeNotification(notification: Notification){
+        let tabBarVC = self.window?.rootViewController as! UITabBarController
+        let favNavVC = tabBarVC.viewControllers?.last as! UINavigationController
+        if let total = notification.object as? Int {
+            if total != 0 {
+                favNavVC.tabBarItem.badgeValue = "\(total)"
+            } else {
+                favNavVC.tabBarItem.badgeValue = nil
+            }
+        }
+    }
 
 }
 
